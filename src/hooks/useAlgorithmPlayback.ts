@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { AlgorithmStep } from '../engine/types';
+import type { BaseAlgorithmStep } from '../engine/types';
 import { PLAYBACK_SPEEDS, DEFAULT_SPEED_INDEX } from '../engine/playback';
 
-interface UseAlgorithmPlaybackProps {
-  steps: AlgorithmStep[];
+interface UseAlgorithmPlaybackProps<T extends BaseAlgorithmStep = BaseAlgorithmStep> {
+  steps: T[];
   onComplete?: () => void;
 }
 
-export function useAlgorithmPlayback({ steps, onComplete }: UseAlgorithmPlaybackProps) {
+export function useAlgorithmPlayback<T extends BaseAlgorithmStep = BaseAlgorithmStep>({
+  steps,
+  onComplete,
+}: UseAlgorithmPlaybackProps<T>) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speedIndex, setSpeedIndex] = useState(DEFAULT_SPEED_INDEX);
@@ -138,7 +141,7 @@ export function useAlgorithmPlayback({ steps, onComplete }: UseAlgorithmPlayback
     [pause]
   );
 
-  const currentStep: AlgorithmStep | undefined = steps[currentStepIndex];
+  const currentStep: T | undefined = steps[currentStepIndex];
   const isAtStart = currentStepIndex === 0;
   const isAtEnd = steps.length === 0 || currentStepIndex >= steps.length - 1;
 

@@ -1,9 +1,18 @@
 import React from 'react';
 import { Clock, HardDrive, Cpu, GitFork } from 'lucide-react';
 import { MERGE_SORT_METADATA } from '../../algorithms/sorting/mergeSort';
+import type { AlgorithmMetadata } from '../../engine/types';
 
-export const ComplexityPanel: React.FC = () => {
-  const { timeComplexity, spaceComplexity, paradigm } = MERGE_SORT_METADATA;
+interface ComplexityPanelProps {
+  metadata?: AlgorithmMetadata;
+  customNote?: string;
+}
+
+export const ComplexityPanel: React.FC<ComplexityPanelProps> = ({
+  metadata = MERGE_SORT_METADATA,
+  customNote,
+}) => {
+  const { timeComplexity, spaceComplexity, paradigm, description } = metadata;
 
   return (
     <div className="clay-surface p-5 sm:p-6 mb-6">
@@ -23,7 +32,7 @@ export const ComplexityPanel: React.FC = () => {
           <div className="text-base font-mono font-bold text-emerald-300">
             {timeComplexity.best}
           </div>
-          <div className="text-[10px] text-txt-muted mt-0.5">Always divides all log n levels</div>
+          <div className="text-[10px] text-txt-muted mt-0.5">Optimal execution scenario</div>
         </div>
 
         {/* Average Case */}
@@ -35,7 +44,7 @@ export const ComplexityPanel: React.FC = () => {
           <div className="text-base font-mono font-bold text-cyan-300">
             {timeComplexity.average}
           </div>
-          <div className="text-[10px] text-txt-muted mt-0.5">Consistent divide & conquer</div>
+          <div className="text-[10px] text-txt-muted mt-0.5">Expected runtime complexity</div>
         </div>
 
         {/* Worst Case */}
@@ -47,7 +56,7 @@ export const ComplexityPanel: React.FC = () => {
           <div className="text-base font-mono font-bold text-amber-300">
             {timeComplexity.worst}
           </div>
-          <div className="text-[10px] text-txt-muted mt-0.5">Independent of initial array order</div>
+          <div className="text-[10px] text-txt-muted mt-0.5">Upper asymptotic bound</div>
         </div>
 
         {/* Space Complexity */}
@@ -59,7 +68,7 @@ export const ComplexityPanel: React.FC = () => {
           <div className="text-base font-mono font-bold text-purple-300">
             {spaceComplexity}
           </div>
-          <div className="text-[10px] text-txt-muted mt-0.5">Temporary buffers for merging</div>
+          <div className="text-[10px] text-txt-muted mt-0.5">Memory consumed during execution</div>
         </div>
       </div>
 
@@ -67,11 +76,8 @@ export const ComplexityPanel: React.FC = () => {
       <div className="text-xs text-txt-secondary leading-relaxed bg-[#161920] p-3 rounded-clay-sm border border-white/5 flex items-start gap-2.5">
         <GitFork className="w-4 h-4 text-accent-secondary shrink-0 mt-0.5" />
         <p>
-          <strong className="text-txt-primary">{paradigm}:</strong> The algorithm divides the
-          problem into independent subproblems of size <span className="font-mono text-purple-300">n / 2</span>{' '}
-          (depth: <span className="font-mono text-cyan-300">⌈log₂ n⌉</span>), and at each level performs a linear{' '}
-          <span className="font-mono text-emerald-300">O(n)</span> merge of the sorted subarrays. This guarantees{' '}
-          <span className="font-mono text-amber-300">O(n log n)</span> time complexity in all cases.
+          <strong className="text-txt-primary">{paradigm}:</strong>{' '}
+          {customNote || description}
         </p>
       </div>
     </div>

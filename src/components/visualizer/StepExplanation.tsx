@@ -1,8 +1,14 @@
+import React from 'react';
 import { Terminal, ArrowRightCircle } from 'lucide-react';
-import type { AlgorithmStep } from '../../engine/types';
+import type { BaseAlgorithmStep } from '../../engine/types';
 
 interface StepExplanationProps {
-  step: AlgorithmStep;
+  step: BaseAlgorithmStep & {
+    depth?: number;
+    writeIndex?: number;
+    writeValue?: number;
+    comparedIndices?: [number, number];
+  };
 }
 
 export const StepExplanation: React.FC<StepExplanationProps> = ({ step }) => {
@@ -15,17 +21,35 @@ export const StepExplanation: React.FC<StepExplanationProps> = ({ step }) => {
       case 'PREPARE_MERGE':
         return { label: 'CONQUER', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' };
       case 'COMPARE':
+      case 'TRY_CANDIDATE':
+      case 'PAIR_PRODUCT':
+      case 'CHAR_MATCH':
         return { label: 'COMPARE', color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' };
+      case 'CONFLICT_DETECTED':
+      case 'CYCLE_DETECTED':
+        return { label: 'CONFLICT', color: 'bg-red-500/20 text-red-300 border-red-500/30' };
       case 'WRITE':
       case 'WRITE_REMAINING':
-        return { label: 'WRITE TO ARRAY', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+      case 'PLACE_QUEEN':
+      case 'INCLUDE_ITEM':
+      case 'STORE_RESULT':
+      case 'AUGMENT_FLOW':
+      case 'RELAX_EDGE':
+        return { label: 'STATE UPDATE', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+      case 'REMOVE_QUEEN':
+      case 'LPS_FALLBACK':
+      case 'KMP_FALLBACK':
+        return { label: 'BACKTRACK / FALLBACK', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' };
       case 'SEGMENT_SORTED':
-        return { label: 'MERGED SEGMENT', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
+      case 'SOLUTION_FOUND':
+      case 'OPTIMAL_SOLUTION_FOUND':
+      case 'PATTERN_OCCURRENCE_FOUND':
+      case 'MAX_FLOW_REACHED':
       case 'COMPLETE':
-        return { label: 'SORT COMPLETE', color: 'bg-emerald-400/20 text-emerald-200 border-emerald-400/40' };
+        return { label: 'SUCCESS', color: 'bg-emerald-400/20 text-emerald-200 border-emerald-400/40' };
       case 'INITIAL':
       default:
-        return { label: 'INITIAL STATE', color: 'bg-white/10 text-txt-secondary border-white/10' };
+        return { label: op.replace(/_/g, ' '), color: 'bg-white/10 text-txt-secondary border-white/10' };
     }
   };
 

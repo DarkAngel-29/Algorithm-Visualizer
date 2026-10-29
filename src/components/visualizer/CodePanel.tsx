@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import { Code2, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { MERGE_SORT_METADATA } from '../../algorithms/sorting/mergeSort';
+import type { AlgorithmMetadata } from '../../engine/types';
 
 interface CodePanelProps {
   activeLine: number;
+  metadata?: AlgorithmMetadata;
+  title?: string;
 }
 
-export const CodePanel: React.FC<CodePanelProps> = ({ activeLine }) => {
+export const CodePanel: React.FC<CodePanelProps> = ({
+  activeLine,
+  metadata = MERGE_SORT_METADATA,
+  title = 'Algorithm Pseudocode',
+}) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const lines = MERGE_SORT_METADATA.pseudocode.lines;
+  const lines = metadata.pseudocode.lines;
 
   const handleCopy = () => {
     const codeString = lines.map((l) => '  '.repeat(l.indent) + l.code).join('\n');
@@ -29,7 +36,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ activeLine }) => {
           className="flex items-center gap-2 text-txt-primary hover:text-accent-secondary transition-colors"
         >
           <Code2 className="w-4 h-4 text-accent-primary" />
-          <h3 className="text-sm font-semibold">Algorithm Pseudocode</h3>
+          <h3 className="text-sm font-semibold">{title}</h3>
           <span className="text-xs text-txt-muted ml-1">
             {isCollapsed ? <ChevronDown className="w-4 h-4 inline" /> : <ChevronUp className="w-4 h-4 inline" />}
           </span>

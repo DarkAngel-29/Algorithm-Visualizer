@@ -1,9 +1,25 @@
 /**
  * Core types for Algorithm Visualizer Engine
- * Designed to be generic and easily extensible to future sorting, searching, graph, and tree algorithms.
+ * Supports sorting, backtracking, dynamic programming, matrix operations,
+ * network flow, shortest paths, and string pattern matching.
  */
 
-export type AlgorithmCategory = 'sorting' | 'searching' | 'graph' | 'tree' | 'dp';
+export type AlgorithmCategory =
+  | 'sorting'
+  | 'backtracking'
+  | 'dp'
+  | 'matrix'
+  | 'flow'
+  | 'graph'
+  | 'string';
+
+export interface BaseAlgorithmStep {
+  stepIndex: number;
+  phase: string;
+  operation: string;
+  explanation: string;
+  codeLine: number;
+}
 
 export type AlgorithmPhase =
   | 'idle'
@@ -13,10 +29,11 @@ export type AlgorithmPhase =
   | 'compare'
   | 'write'
   | 'merge_segment_complete'
-  | 'complete';
+  | 'complete'
+  | string;
 
 export interface ArrayElement {
-  id: string; // Unique identifier for smooth transitions
+  id: string;
   value: number;
   originalIndex: number;
 }
@@ -30,25 +47,178 @@ export type BarState =
   | 'sorted_segment'
   | 'fully_sorted';
 
-export interface AlgorithmStep {
-  stepIndex: number;
-  phase: AlgorithmPhase;
-  operation: string; // e.g., 'SPLIT', 'COMPARE', 'OVERWRITE', 'MERGE_DONE', 'COMPLETE'
-  array: number[]; // Full snapshot of the array at this step
-  activeRange?: [number, number]; // [left, right]
+export interface AlgorithmStep extends BaseAlgorithmStep {
+  array: number[];
+  activeRange?: [number, number];
   mid?: number;
-  leftSubarray?: [number, number]; // [left, mid]
-  rightSubarray?: [number, number]; // [mid + 1, right]
-  comparedIndices?: [number, number]; // Indices of items being compared
-  writeIndex?: number; // Index where a value is written
+  leftSubarray?: [number, number];
+  rightSubarray?: [number, number];
+  comparedIndices?: [number, number];
+  writeIndex?: number;
   writeValue?: number;
-  sortedRanges?: [number, number][]; // Subarrays that are currently sorted
-  sortedIndices?: number[]; // Individual indices that are finalized
-  explanation: string; // Educational natural language explanation
-  codeLine: number; // 1-based line number in pseudocode to highlight
-  depth?: number; // Recursion tree depth (useful for visual insight)
+  sortedRanges?: [number, number][];
+  sortedIndices?: number[];
+  depth?: number;
 }
 
+// ================= N-QUEENS TYPES =================
+export interface QueenPosition {
+  row: number;
+  col: number;
+}
+
+export interface QueenConflict {
+  from: QueenPosition;
+  to: QueenPosition;
+  reason: 'column' | 'diagonal' | 'anti-diagonal';
+}
+
+export interface NQueensStep extends BaseAlgorithmStep {
+  boardSize: number;
+  queens: QueenPosition[];
+  currentRow: number;
+  candidateCol: number | null;
+  status: 'searching' | 'placing' | 'conflict' | 'safe' | 'backtracking' | 'solution_found' | 'complete';
+  conflict?: QueenConflict;
+  attemptsCount: number;
+  backtrackCount: number;
+  solutionsCount: number;
+  allSolutions?: QueenPosition[][];
+  isTerminal?: boolean;
+}
+
+// ================= KNAPSACK 0/1 TYPES =================
+export interface KnapsackItem {
+  id: number;
+  name: string;
+  weight: number;
+  value: number;
+}
+
+export interface KnapsackStep extends BaseAlgorithmStep {
+  items: KnapsackItem[];
+  capacity: number;
+  dpTable: number[][]; // (n+1) x (W+1)
+  currentItemIndex: number; // 1-based (0 represents no item)
+  currentWeight: number;
+  comparingCells?: {
+    excludeCell: [number, number]; // [i-1, w]
+    includeCell?: [number, number]; // [i-1, w - weight]
+  };
+  chosenValue?: number;
+  decision?: 'exclude' | 'include' | 'too_heavy' | 'base_case' | 'traceback';
+  tracebackPath?: [number, number][];
+  selectedItemIds?: number[];
+  optimalValue?: number;
+  optimalWeight?: number;
+  isReconstruction?: boolean;
+}
+
+// ================= MATRIX MULTIPLICATION TYPES =================
+export interface MatrixStep extends BaseAlgorithmStep {
+  matrixA: number[][];
+  matrixB: number[][];
+  matrixC: (number | null)[][];
+  activeRowA?: number;
+  activeColB?: number;
+  activeResultCell?: [number, number]; // [i, j]
+  currentPairIndex?: number; // k
+  pairMultiplication?: {
+    valA: number;
+    valB: number;
+    product: number;
+  };
+  accumulatedSum: number;
+  expressionString?: string;
+  isCompleted?: boolean;
+}
+
+// ================= MAXIMUM FLOW (EDMONDS-KARP) TYPES =================
+export interface FlowNode {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  isSource?: boolean;
+  isSink?: boolean;
+}
+
+export interface FlowEdge {
+  from: string;
+  to: string;
+  capacity: number;
+  flow: number;
+}
+
+export interface MaxFlowStep extends BaseAlgorithmStep {
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  sourceId: string;
+  sinkId: string;
+  currentFlow: number;
+  bfsQueue?: string[];
+  visitedNodes?: string[];
+  augmentingPath?: string[]; // Node IDs from source to sink
+  bottleneckCapacity?: number;
+  activeEdge?: [string, string];
+  residualCapacities?: Record<string, number>; // key: "u->v", val: capacity - flow
+  iterationNumber: number;
+  minCutReachableNodes?: string[];
+  isComplete?: boolean;
+}
+
+// ================= BELLMAN-FORD TYPES =================
+export interface BFNode {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface BFEdge {
+  from: string;
+  to: string;
+  weight: number;
+}
+
+export interface BellmanFordStep extends BaseAlgorithmStep {
+  nodes: BFNode[];
+  edges: BFEdge[];
+  sourceId: string;
+  distances: Record<string, number>; // Distance from source; Infinity if unreachable
+  predecessors: Record<string, string | null>;
+  currentIteration: number;
+  activeEdgeIndex?: number;
+  activeEdge?: BFEdge;
+  relaxedSuccessfully?: boolean;
+  isNegativeCycleDetected?: boolean;
+  negativeCycleNodes?: string[];
+  unreachableNodes?: string[];
+  isComplete?: boolean;
+}
+
+// ================= LPS + KMP TYPES =================
+export interface KMPStep extends BaseAlgorithmStep {
+  stage: 'lps' | 'search';
+  text: string;
+  pattern: string;
+  lpsTable: number[];
+  currentPatternIndex: number;
+  currentPrefixLen: number;
+  currentTextIndex: number;
+  comparisonIndices?: {
+    textCharIdx?: number;
+    patternCharIdx: number;
+    isMatch: boolean;
+  };
+  matchedIndices: number[]; // Starting indices of complete matches in text
+  comparisonCount: number;
+  isLPSComplete?: boolean;
+  isSearchComplete?: boolean;
+  fallbackReason?: string;
+}
+
+// ================= COMMON METADATA & RESULTS =================
 export interface AlgorithmMetadata {
   id: string;
   name: string;
