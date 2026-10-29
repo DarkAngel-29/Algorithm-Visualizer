@@ -41,8 +41,8 @@ export const NAV_ALGORITHMS: NavAlgorithmItem[] = [
   },
   {
     id: 'matrix',
-    name: 'Matrix Multiplication',
-    category: 'Matrix Operations',
+    name: 'Matrix Chain Multiplication',
+    category: 'Dynamic Programming',
     route: 'matrix',
     icon: React.createElement(Grid, { className: 'w-4 h-4 text-purple-400' }),
   },

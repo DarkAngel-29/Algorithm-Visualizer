@@ -84,6 +84,7 @@ export interface NQueensStep extends BaseAlgorithmStep {
   backtrackCount: number;
   solutionsCount: number;
   allSolutions?: QueenPosition[][];
+  searchStrategy?: 'ltr' | 'rtl' | 'middle_out';
   isTerminal?: boolean;
 }
 
@@ -114,24 +115,29 @@ export interface KnapsackStep extends BaseAlgorithmStep {
   isReconstruction?: boolean;
 }
 
-// ================= MATRIX MULTIPLICATION TYPES =================
-export interface MatrixStep extends BaseAlgorithmStep {
-  matrixA: number[][];
-  matrixB: number[][];
-  matrixC: (number | null)[][];
-  activeRowA?: number;
-  activeColB?: number;
-  activeResultCell?: [number, number]; // [i, j]
-  currentPairIndex?: number; // k
-  pairMultiplication?: {
-    valA: number;
-    valB: number;
-    product: number;
-  };
-  accumulatedSum: number;
-  expressionString?: string;
-  isCompleted?: boolean;
+// ================= MATRIX CHAIN MULTIPLICATION TYPES =================
+export interface MatrixChainStep extends BaseAlgorithmStep {
+  dimensions: number[]; // e.g. [10, 30, 5, 60] -> A1(10x30), A2(30x5), A3(5x60)
+  matrixCount: number; // n
+  mTable: (number | null)[][]; // 1-indexed (n+1) x (n+1)
+  sTable: (number | null)[][]; // 1-indexed (n+1) x (n+1)
+  chainLength: number; // L (from 2 to n)
+  subproblemI: number; // i
+  subproblemJ: number; // j
+  candidateK?: number; // k
+  leftCost?: number; // m[i][k]
+  rightCost?: number; // m[k+1][j]
+  combineCost?: number; // p[i-1] * p[k] * p[j]
+  candidateCost?: number; // leftCost + rightCost + combineCost
+  currentBestCost?: number;
+  bestSplitSoFar?: number;
+  isNewBestFound?: boolean;
+  optimalParenthesization?: string;
+  isReconstruction?: boolean;
+  isComplete?: boolean;
 }
+
+export type MatrixStep = MatrixChainStep;
 
 // ================= MAXIMUM FLOW (EDMONDS-KARP) TYPES =================
 export interface FlowNode {
@@ -194,6 +200,8 @@ export interface BellmanFordStep extends BaseAlgorithmStep {
   isNegativeCycleDetected?: boolean;
   negativeCycleNodes?: string[];
   unreachableNodes?: string[];
+  destinationId?: string;
+  shortestPathToDestination?: string[];
   isComplete?: boolean;
 }
 

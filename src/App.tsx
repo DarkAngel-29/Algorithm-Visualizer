@@ -3,7 +3,7 @@ import { Navbar } from './components/layout/Navbar';
 import { MergeSortPage } from './pages/MergeSortPage';
 import { NQueensPage } from './pages/NQueensPage';
 import { KnapsackPage } from './pages/KnapsackPage';
-import { MatrixPage } from './pages/MatrixPage';
+import { MatrixChainPage } from './pages/MatrixChainPage';
 import { MaxFlowPage } from './pages/MaxFlowPage';
 import { BellmanFordPage } from './pages/BellmanFordPage';
 import { KMPPage } from './pages/KMPPage';
@@ -39,7 +39,7 @@ export function App() {
       case 'knapsack':
         return <KnapsackPage />;
       case 'matrix':
-        return <MatrixPage />;
+        return <MatrixChainPage />;
       case 'max-flow':
         return <MaxFlowPage />;
       case 'bellman-ford':

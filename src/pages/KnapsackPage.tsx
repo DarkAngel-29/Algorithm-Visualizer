@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Package, Sparkles, Database, Bookmark } from 'lucide-react';
+import { Package, Sparkles, Database, Bookmark, Plus, Trash2, Shuffle, AlertCircle } from 'lucide-react';
 import {
   generateKnapsackSteps,
   KNAPSACK_METADATA,
@@ -18,6 +18,7 @@ import { ComplexityPanel } from '../components/visualizer/ComplexityPanel';
 export const KnapsackPage: React.FC = () => {
   const [items, setItems] = useState<KnapsackItem[]>(DEFAULT_KNAPSACK_ITEMS);
   const [capacity, setCapacity] = useState<number>(DEFAULT_KNAPSACK_CAPACITY);
+  const [inputError, setInputError] = useState<string | null>(null);
 
   const executionResult = useMemo(() => {
     return generateKnapsackSteps(items, capacity);
@@ -56,8 +57,60 @@ export const KnapsackPage: React.FC = () => {
     onComplete: handleComplete,
   });
 
+  // Item Modification Handlers
+  const handleUpdateItem = (id: number, field: 'name' | 'weight' | 'value', val: string) => {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it;
+        if (field === 'name') return { ...it, name: val };
+        const num = Number(val);
+        if (field === 'weight') {
+          if (num <= 0 || !Number.isInteger(num)) {
+            setInputError('Weights must be positive whole numbers.');
+          } else {
+            setInputError(null);
+          }
+          return { ...it, weight: Math.max(1, num || 1) };
+        } else {
+          if (num < 0 || !Number.isInteger(num)) {
+            setInputError('Values must be non-negative whole numbers.');
+          } else {
+            setInputError(null);
+          }
+          return { ...it, value: Math.max(0, num || 0) };
+        }
+      })
+    );
+  };
+
+  const handleAddItem = () => {
+    if (items.length >= 8) {
+      setInputError('Maximum 8 items supported for clear visual display.');
+      return;
+    }
+    const nextId = items.length > 0 ? Math.max(...items.map((it) => it.id)) + 1 : 1;
+    const newItem: KnapsackItem = {
+      id: nextId,
+      name: `Item ${nextId}`,
+      weight: Math.floor(Math.random() * 4) + 1,
+      value: Math.floor(Math.random() * 8) + 2,
+    };
+    setInputError(null);
+    setItems([...items, newItem]);
+  };
+
+  const handleRemoveItem = (id: number) => {
+    if (items.length <= 1) {
+      setInputError('At least 1 item is required.');
+      return;
+    }
+    setInputError(null);
+    setItems(items.filter((it) => it.id !== id));
+  };
+
   // Preset Configurations
-  const handleLoadPreset = (type: 'default' | 'dense' | 'lightweight' | 'tight') => {
+  const handleLoadPreset = (type: 'default' | 'dense' | 'lightweight' | 'tight' | 'zero') => {
+    setInputError(null);
     if (type === 'default') {
       setItems(DEFAULT_KNAPSACK_ITEMS);
       setCapacity(8);
@@ -77,14 +130,35 @@ export const KnapsackPage: React.FC = () => {
         { id: 4, name: 'Magic Cloak', weight: 3, value: 10 },
       ]);
       setCapacity(5);
-    } else {
+    } else if (type === 'tight') {
       setItems([
         { id: 1, name: 'Heavy Chest', weight: 6, value: 15 },
         { id: 2, name: 'Iron Ore', weight: 5, value: 11 },
         { id: 3, name: 'Ancient Book', weight: 3, value: 8 },
       ]);
       setCapacity(7);
+    } else {
+      // Capacity zero edge case
+      setItems(DEFAULT_KNAPSACK_ITEMS);
+      setCapacity(0);
     }
+  };
+
+  const handleRandomize = () => {
+    setInputError(null);
+    const count = Math.floor(Math.random() * 3) + 3; // 3 to 5 items
+    const randItems: KnapsackItem[] = [];
+    const names = ['Gem', 'Relic', 'Crystal', 'Scroll', 'Amulet', 'Tome', 'Goblet'];
+    for (let i = 1; i <= count; i++) {
+      randItems.push({
+        id: i,
+        name: `${names[i - 1] || 'Item ' + i}`,
+        weight: Math.floor(Math.random() * 5) + 1,
+        value: Math.floor(Math.random() * 10) + 1,
+      });
+    }
+    setItems(randItems);
+    setCapacity(Math.floor(Math.random() * 7) + 5);
   };
 
   // Keyboard shortcut navigation
@@ -133,40 +207,135 @@ export const KnapsackPage: React.FC = () => {
               0/1 Knapsack Visualizer
             </h1>
             <p className="text-sm sm:text-base text-txt-secondary mt-1 max-w-2xl">
-              Construct the 2D Dynamic Programming table cell-by-cell comparing exclusion vs inclusion, then backtrack to reconstruct the optimal item selection.
+              Configure knapsack capacity, customize item weights and values, and observe the 2D DP table construction and solution reconstruction.
             </p>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-txt-muted bg-[#181B22] px-3.5 py-2 rounded-clay-sm border border-white/5">
             <Sparkles className="w-4 h-4 text-accent-secondary" />
-            <span>DP Table & Traceback Engine</span>
+            <span>Interactive DP Table & Item Editor</span>
           </div>
         </div>
       </section>
 
-      {/* Input & Presets Toolbar */}
+      {/* Input Configuration & Item Editor */}
       <div className="clay-surface p-5 sm:p-6 mb-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-6">
-            {/* Capacity Control */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-txt-secondary font-medium">Knapsack Capacity (W):</span>
-              <input
-                type="range"
-                min="4"
-                max="12"
-                value={capacity}
-                onChange={(e) => setCapacity(Number(e.target.value))}
-                disabled={isPlaying}
-                className="w-28 accent-purple-400 cursor-pointer"
-              />
-              <span className="font-mono text-txt-primary font-bold w-6 text-center">
-                {capacity}
-              </span>
+        <div className="flex flex-col gap-4">
+          {/* Top Controls: Capacity & Item Actions */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-txt-secondary font-medium">Knapsack Capacity (W):</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="15"
+                  value={capacity}
+                  onChange={(e) => setCapacity(Number(e.target.value))}
+                  disabled={isPlaying}
+                  className="w-28 accent-purple-400 cursor-pointer"
+                />
+                <span className="font-mono text-txt-primary font-bold text-xs bg-[#161920] px-2.5 py-0.5 rounded border border-white/5">
+                  {capacity} kg
+                </span>
+              </div>
             </div>
 
-            {/* Presets */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleAddItem}
+                disabled={isPlaying || items.length >= 8}
+                className="clay-button px-3 py-1.5 text-xs text-emerald-300 hover:text-white flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Item</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRandomize}
+                disabled={isPlaying}
+                className="clay-button px-3 py-1.5 text-xs text-txt-secondary hover:text-txt-primary flex items-center gap-1"
+              >
+                <Shuffle className="w-3.5 h-3.5 text-accent-primary" />
+                <span>Random Items</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Editable Items Table */}
+          <div className="clay-inset p-3 rounded-clay-sm overflow-x-auto">
+            <table className="w-full text-xs font-mono text-left">
+              <thead>
+                <tr className="border-b border-white/10 text-txt-muted text-[11px]">
+                  <th className="pb-1.5 pl-1">Item Name</th>
+                  <th className="pb-1.5">Weight (kg)</th>
+                  <th className="pb-1.5">Value ($)</th>
+                  <th className="pb-1.5 text-right pr-1">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <td className="py-1.5 pl-1">
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
+                        disabled={isPlaying}
+                        className="bg-transparent text-txt-primary border-b border-white/10 focus:border-accent-primary focus:outline-none w-36 py-0.5 text-xs font-sans font-medium"
+                      />
+                    </td>
+                    <td className="py-1.5">
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={item.weight}
+                        onChange={(e) => handleUpdateItem(item.id, 'weight', e.target.value)}
+                        disabled={isPlaying}
+                        className="w-16 bg-[#161920] text-cyan-300 px-2 py-0.5 rounded border border-white/5 focus:outline-none focus:border-cyan-400 font-mono text-xs"
+                      />
+                    </td>
+                    <td className="py-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        value={item.value}
+                        onChange={(e) => handleUpdateItem(item.id, 'value', e.target.value)}
+                        disabled={isPlaying}
+                        className="w-16 bg-[#161920] text-amber-300 px-2 py-0.5 rounded border border-white/5 focus:outline-none focus:border-amber-400 font-mono text-xs font-semibold"
+                      />
+                    </td>
+                    <td className="py-1.5 text-right pr-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item.id)}
+                        disabled={isPlaying || items.length <= 1}
+                        className="text-txt-muted hover:text-red-400 p-1 transition-colors disabled:opacity-30"
+                        title="Remove Item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {inputError && (
+            <div className="text-xs text-red-300 bg-red-950/40 p-2.5 rounded border border-red-500/30 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{inputError}</span>
+            </div>
+          )}
+
+          {/* Presets and Solve Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/5">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-txt-muted flex items-center gap-1">
                 <Bookmark className="w-3 h-3 text-accent-secondary" /> Presets:
               </span>
@@ -176,7 +345,7 @@ export const KnapsackPage: React.FC = () => {
                 disabled={isPlaying}
                 className="clay-button px-2.5 py-1 text-xs"
               >
-                Default
+                Default (4 items)
               </button>
               <button
                 type="button"
@@ -200,53 +369,31 @@ export const KnapsackPage: React.FC = () => {
                 disabled={isPlaying}
                 className="clay-button px-2.5 py-1 text-xs"
               >
-                Tight Cap
+                Tight Capacity
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLoadPreset('zero')}
+                disabled={isPlaying}
+                className="clay-button px-2.5 py-1 text-xs text-amber-300"
+              >
+                Capacity = 0
               </button>
             </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              reset();
-              play();
-            }}
-            className="clay-button clay-button-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5"
-          >
-            <Package className="w-4 h-4" />
-            <span>Solve Knapsack</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                reset();
+                play();
+              }}
+              className="clay-button clay-button-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5"
+            >
+              <Package className="w-4 h-4" />
+              <span>Solve Knapsack</span>
+            </button>
+          </div>
         </div>
-
-        {/* Live Search Metrics */}
-        {currentStep && (
-          <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="clay-card p-2.5 rounded-clay-sm">
-              <div className="text-[10px] text-txt-muted uppercase font-mono">Table Cells</div>
-              <div className="text-sm font-mono font-bold text-accent-primary mt-0.5">
-                {(items.length + 1) * (capacity + 1)} cells
-              </div>
-            </div>
-            <div className="clay-card p-2.5 rounded-clay-sm">
-              <div className="text-[10px] text-txt-muted uppercase font-mono">Current Cell</div>
-              <div className="text-sm font-mono font-bold text-cyan-300 mt-0.5">
-                DP[{currentStep.currentItemIndex}][{currentStep.currentWeight}]
-              </div>
-            </div>
-            <div className="clay-card p-2.5 rounded-clay-sm">
-              <div className="text-[10px] text-txt-muted uppercase font-mono">Optimal Value</div>
-              <div className="text-sm font-mono font-bold text-emerald-300 mt-0.5">
-                ${currentStep.optimalValue !== undefined ? currentStep.optimalValue : currentStep.chosenValue || 0}
-              </div>
-            </div>
-            <div className="clay-card p-2.5 rounded-clay-sm">
-              <div className="text-[10px] text-txt-muted uppercase font-mono">Selected Items</div>
-              <div className="text-sm font-mono font-bold text-amber-300 mt-0.5">
-                {currentStep.selectedItemIds?.length || 0} items
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Main Visualization Panel */}

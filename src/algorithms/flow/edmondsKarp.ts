@@ -77,6 +77,29 @@ export function generateMaxFlowSteps(
     return res;
   };
 
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  if (!nodeIds.has(sourceId) || !nodeIds.has(sinkId) || sourceId === sinkId) {
+    steps.push({
+      stepIndex: 0,
+      phase: 'complete',
+      operation: 'INITIALIZE',
+      explanation:
+        sourceId === sinkId
+          ? `Source and Sink must be distinct vertices (both are currently "${sourceId}"). Select distinct vertices to run.`
+          : `Selected Source "${sourceId}" or Sink "${sinkId}" does not exist in the node list.`,
+      codeLine: 1,
+      nodes,
+      edges,
+      sourceId,
+      sinkId,
+      currentFlow: 0,
+      residualCapacities: getResidualMap(),
+      iterationNumber: 0,
+      isComplete: true,
+    });
+    return { steps, maxFlow: 0, minCut: [] };
+  }
+
   // Step 0: Initial Zero Flow
   steps.push({
     stepIndex: stepCounter++,
@@ -94,7 +117,7 @@ export function generateMaxFlowSteps(
   });
 
   // Main Edmonds-Karp Loop
-  while (true) {
+  while (iteration < 200) {
     iteration++;
 
     // BFS to find augmenting path in residual graph

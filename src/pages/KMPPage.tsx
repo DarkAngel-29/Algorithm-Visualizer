@@ -1,6 +1,14 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Search, Sparkles, Bookmark, Play } from 'lucide-react';
+import {
+  Search,
+  Sparkles,
+  Bookmark,
+  Play,
+  RotateCcw,
+  Dice5,
+  AlertTriangle,
+} from 'lucide-react';
 import {
   generateKMPSteps,
   KMP_METADATA,
@@ -17,10 +25,21 @@ import { ComplexityPanel } from '../components/visualizer/ComplexityPanel';
 export const KMPPage: React.FC = () => {
   const [text, setText] = useState<string>(DEFAULT_KMP_TEXT);
   const [pattern, setPattern] = useState<string>(DEFAULT_KMP_PATTERN);
-  const [inputError, setInputError] = useState<string | null>(null);
+
+  const validationError = useMemo(() => {
+    if (!text.trim() || !pattern.trim()) {
+      return 'Both text and pattern must not be empty.';
+    }
+    if (pattern.trim().length > text.trim().length) {
+      return 'Pattern length cannot exceed target text length to search for matches.';
+    }
+    return null;
+  }, [text, pattern]);
 
   const executionResult = useMemo(() => {
-    return generateKMPSteps(text, pattern);
+    const cleanText = text.trim().toUpperCase();
+    const cleanPattern = pattern.trim().toUpperCase();
+    return generateKMPSteps(cleanText, cleanPattern);
   }, [text, pattern]);
 
   const handleComplete = useCallback(() => {
@@ -58,35 +77,48 @@ export const KMPPage: React.FC = () => {
     onComplete: handleComplete,
   });
 
-  const handleLoadPreset = (type: 'classic' | 'repeated' | 'overlap' | 'absent') => {
-    setInputError(null);
+  const handleLoadPreset = (type: 'classic' | 'multiple' | 'overlap' | 'repeated' | 'absent') => {
     if (type === 'classic') {
       setText(DEFAULT_KMP_TEXT);
       setPattern(DEFAULT_KMP_PATTERN);
-    } else if (type === 'repeated') {
-      setText('AAAAABAAAAAB');
-      setPattern('AAAA');
+    } else if (type === 'multiple') {
+      setText('AABAACAADAABAABA');
+      setPattern('AABA');
     } else if (type === 'overlap') {
       setText('ONIONIONS');
       setPattern('ONIONS');
+    } else if (type === 'repeated') {
+      setText('AAAAABAAAAAB');
+      setPattern('AAAA');
     } else {
       setText('ABCDEFGH');
       setPattern('XYZ');
     }
   };
 
-  const handleApplyInputs = (newText: string, newPattern: string) => {
-    if (!newText.trim() || !newPattern.trim()) {
-      setInputError('Both text and pattern must not be empty.');
-      return;
+  const handleGenerateRandom = () => {
+    const alphabet = ['A', 'B', 'C'];
+    const textLen = Math.floor(Math.random() * 6) + 14; // 14 to 19
+    const patLen = Math.floor(Math.random() * 3) + 4; // 4 to 6
+
+    let randText = '';
+    for (let i = 0; i < textLen; i++) {
+      randText += alphabet[Math.floor(Math.random() * alphabet.length)];
     }
-    if (newPattern.length > newText.length) {
-      setInputError('Pattern length cannot exceed text length.');
-      return;
+
+    // Pick a random substring or generate random pattern to ensure frequent matches
+    let randPattern = '';
+    if (Math.random() > 0.3) {
+      const start = Math.floor(Math.random() * (textLen - patLen));
+      randPattern = randText.substring(start, start + patLen);
+    } else {
+      for (let i = 0; i < patLen; i++) {
+        randPattern += alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
     }
-    setInputError(null);
-    setText(newText.trim().toUpperCase());
-    setPattern(newPattern.trim().toUpperCase());
+
+    setText(randText);
+    setPattern(randPattern);
   };
 
   // Keyboard shortcut navigation
@@ -149,36 +181,51 @@ export const KMPPage: React.FC = () => {
       {/* String Configuration Panel */}
       <div className="clay-surface p-5 sm:p-6 mb-6">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-txt-secondary font-medium mb-1 block">
-                Target Text (T):
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-txt-secondary font-medium block">
+                  Target Text (T):
+                </label>
+                <span className="text-[11px] font-mono text-txt-muted">
+                  Length: {text.trim().length}
+                </span>
+              </div>
               <input
                 type="text"
                 value={text}
-                onChange={(e) => handleApplyInputs(e.target.value, pattern)}
+                maxLength={40}
+                onChange={(e) => setText(e.target.value.toUpperCase())}
                 disabled={isPlaying}
-                className="w-full clay-inset px-3.5 py-2 text-xs font-mono text-txt-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/60"
+                placeholder="Enter target text string..."
+                className="w-full clay-inset px-3.5 py-2 text-xs font-mono text-txt-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/60 tracking-wider"
               />
             </div>
             <div>
-              <label className="text-xs text-txt-secondary font-medium mb-1 block">
-                Search Pattern (P):
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-txt-secondary font-medium block">
+                  Search Pattern (P):
+                </label>
+                <span className="text-[11px] font-mono text-txt-muted">
+                  Length: {pattern.trim().length}
+                </span>
+              </div>
               <input
                 type="text"
                 value={pattern}
-                onChange={(e) => handleApplyInputs(text, e.target.value)}
+                maxLength={20}
+                onChange={(e) => setPattern(e.target.value.toUpperCase())}
                 disabled={isPlaying}
-                className="w-full clay-inset px-3.5 py-2 text-xs font-mono text-txt-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/60"
+                placeholder="Enter pattern to find..."
+                className="w-full clay-inset px-3.5 py-2 text-xs font-mono text-cyan-300 focus:outline-none focus:ring-1 focus:ring-accent-primary/60 tracking-wider"
               />
             </div>
           </div>
 
-          {inputError && (
-            <div className="text-xs text-red-300 bg-red-950/40 p-2 rounded border border-red-500/30">
-              {inputError}
+          {validationError && (
+            <div className="flex items-center gap-2 text-xs text-amber-300 bg-amber-950/40 p-2.5 rounded border border-amber-500/30">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{validationError}</span>
             </div>
           )}
 
@@ -195,6 +242,14 @@ export const KMPPage: React.FC = () => {
                 className="clay-button px-2.5 py-1 text-xs"
               >
                 Classic Example
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLoadPreset('multiple')}
+                disabled={isPlaying}
+                className="clay-button px-2.5 py-1 text-xs"
+              >
+                Multiple Matches
               </button>
               <button
                 type="button"
@@ -220,6 +275,27 @@ export const KMPPage: React.FC = () => {
               >
                 Absent Pattern
               </button>
+              <button
+                type="button"
+                onClick={handleGenerateRandom}
+                disabled={isPlaying}
+                className="clay-button px-2.5 py-1 text-xs flex items-center gap-1"
+              >
+                <Dice5 className="w-3 h-3 text-accent-primary" />
+                Random Strings
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setText(DEFAULT_KMP_TEXT);
+                  setPattern(DEFAULT_KMP_PATTERN);
+                }}
+                disabled={isPlaying}
+                title="Reset to default text and pattern"
+                className="clay-button px-2 py-1 text-xs"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
             </div>
 
             <button
@@ -228,6 +304,7 @@ export const KMPPage: React.FC = () => {
                 reset();
                 play();
               }}
+              disabled={Boolean(validationError)}
               className="clay-button clay-button-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5"
             >
               <Play className="w-3.5 h-3.5 fill-current" />

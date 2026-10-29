@@ -54,8 +54,9 @@ export const DEFAULT_BF_EDGES: BFEdge[] = [
 export function generateBellmanFordSteps(
   nodes: BFNode[] = DEFAULT_BF_NODES,
   edges: BFEdge[] = DEFAULT_BF_EDGES,
-  sourceId: string = 'A'
-): { steps: BellmanFordStep[]; hasNegativeCycle: boolean } {
+  sourceId: string = 'A',
+  destinationId?: string
+): { steps: BellmanFordStep[]; hasNegativeCycle: boolean; shortestPath?: string[] } {
   const steps: BellmanFordStep[] = [];
   const V = nodes.length;
 
@@ -246,12 +247,43 @@ export function generateBellmanFordSteps(
 
   const unreachableNodes = nodes.filter((n) => distances[n.id] === Infinity).map((n) => n.id);
 
+  let shortestPathToDestination: string[] | undefined;
+  if (!hasNegativeCycle && destinationId && distances[destinationId] !== undefined) {
+    if (distances[destinationId] === Infinity) {
+      shortestPathToDestination = [];
+    } else {
+      let curr: string | null = destinationId;
+      const path: string[] = [];
+      const visited = new Set<string>();
+      while (curr && !visited.has(curr)) {
+        path.unshift(curr);
+        visited.add(curr);
+        if (curr === sourceId) break;
+        curr = predecessors[curr];
+      }
+      if (path[0] === sourceId) {
+        shortestPathToDestination = path;
+      }
+    }
+  }
+
   // Terminal Step
-  const completionMessage = hasNegativeCycle
-    ? `Bellman-Ford finished: Reachable negative-weight cycle detected! Vertices {${negativeCycleNodes.join(
-        ', '
-      )}} are trapped in infinite negative loops.`
-    : `Bellman-Ford converged successfully! All finite shortest paths from source "${sourceId}" are verified.`;
+  let completionMessage: string;
+  if (hasNegativeCycle) {
+    completionMessage = `Bellman-Ford finished: Reachable negative-weight cycle detected! Vertices {${negativeCycleNodes.join(
+      ', '
+    )}} are trapped in infinite negative loops.`;
+  } else if (destinationId && shortestPathToDestination) {
+    if (shortestPathToDestination.length > 0) {
+      completionMessage = `Bellman-Ford converged! Shortest path to "${destinationId}": ${shortestPathToDestination.join(
+        ' → '
+      )} with total minimum cost = ${distances[destinationId]}.`;
+    } else {
+      completionMessage = `Bellman-Ford converged! Destination "${destinationId}" is unreachable from "${sourceId}" (distance = ∞).`;
+    }
+  } else {
+    completionMessage = `Bellman-Ford converged successfully! All finite shortest paths from source "${sourceId}" are verified.`;
+  }
 
   steps.push({
     stepIndex: stepCounter++,
@@ -265,6 +297,8 @@ export function generateBellmanFordSteps(
     distances: { ...distances },
     predecessors: { ...predecessors },
     currentIteration: V,
+    destinationId,
+    shortestPathToDestination,
     isNegativeCycleDetected: hasNegativeCycle,
     negativeCycleNodes,
     unreachableNodes,
@@ -274,5 +308,6 @@ export function generateBellmanFordSteps(
   return {
     steps,
     hasNegativeCycle,
+    shortestPath: shortestPathToDestination,
   };
 }

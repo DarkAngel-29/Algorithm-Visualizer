@@ -1,5 +1,5 @@
 import React from 'react';
-import { Network, AlertOctagon } from 'lucide-react';
+import { Network, AlertOctagon, Navigation } from 'lucide-react';
 import type { BellmanFordStep, BFNode } from '../../../engine/types';
 
 interface BellmanFordVisualizerProps {
@@ -11,6 +11,8 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
     nodes,
     edges,
     sourceId,
+    destinationId,
+    shortestPathToDestination,
     distances,
     predecessors,
     activeEdge,
@@ -18,6 +20,7 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
     isNegativeCycleDetected,
     negativeCycleNodes,
     currentIteration,
+    isComplete,
   } = step;
 
   const nodeMap = new Map<string, BFNode>();
@@ -27,22 +30,43 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
     <div className="clay-surface p-5 sm:p-6 mb-6">
       {/* Metrics Banner */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/5 mb-4 text-xs">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold text-txt-primary flex items-center gap-1.5">
             <Network className="w-4 h-4 text-accent-secondary" />
             Relaxation Status:
           </span>
           <span className="font-mono text-purple-300 font-bold bg-purple-950/40 px-2.5 py-0.5 rounded border border-purple-500/30">
-            Pass {currentIteration} / {nodes.length - 1}
+            Pass {currentIteration} / {Math.max(1, nodes.length - 1)}
           </span>
+
+          {destinationId && (
+            <span className="font-mono text-emerald-300 font-medium bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
+              <Navigation className="w-3 h-3 text-emerald-400" />
+              Target: Node {destinationId}
+            </span>
+          )}
         </div>
 
-        {isNegativeCycleDetected && (
+        {isNegativeCycleDetected ? (
           <div className="flex items-center gap-1.5 text-xs text-red-300 bg-red-950/40 px-2.5 py-1 rounded border border-red-500/30 animate-pulse font-semibold">
             <AlertOctagon className="w-4 h-4 text-red-400" />
             <span>Negative-Weight Cycle Detected!</span>
           </div>
-        )}
+        ) : isComplete && destinationId && shortestPathToDestination ? (
+          shortestPathToDestination.length > 0 ? (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-500/30 font-semibold font-mono">
+              <span>Path:</span>
+              <span>{shortestPathToDestination.join(' → ')}</span>
+              <span className="text-white ml-1">
+                (Cost: {distances[destinationId]})
+              </span>
+            </div>
+          ) : (
+            <div className="text-xs text-txt-muted bg-[#181B22] px-2.5 py-1 rounded border border-white/10 font-mono">
+              Target {destinationId} is Unreachable (∞)
+            </div>
+          )
+        ) : null}
       </div>
 
       {/* Directed Graph Canvas */}
@@ -96,6 +120,17 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
             >
               <path d="M 0 1 L 10 5 L 0 9 z" fill="#EF4444" />
             </marker>
+            <marker
+              id="bf-arrow-path"
+              viewBox="0 0 10 10"
+              refX="22"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981" />
+            </marker>
           </defs>
 
           {/* Directed Weighted Edges */}
@@ -110,6 +145,15 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
               negativeCycleNodes?.includes(e.from) &&
               negativeCycleNodes?.includes(e.to);
 
+            const isPathEdge =
+              isComplete &&
+              !isNegativeCycleDetected &&
+              shortestPathToDestination &&
+              shortestPathToDestination.length > 1 &&
+              shortestPathToDestination.some(
+                (nId, i, arr) => arr[i] === e.from && arr[i + 1] === e.to
+              );
+
             let strokeColor = '#374151';
             let strokeWidth = 2;
             let marker = 'url(#bf-arrow-default)';
@@ -118,6 +162,10 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
               strokeColor = '#EF4444';
               strokeWidth = 3.5;
               marker = 'url(#bf-arrow-cycle)';
+            } else if (isPathEdge) {
+              strokeColor = '#10B981';
+              strokeWidth = 3.5;
+              marker = 'url(#bf-arrow-path)';
             } else if (isActive) {
               if (relaxedSuccessfully) {
                 strokeColor = '#FBBF24';
@@ -147,6 +195,7 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
                   y2={v.y}
                   stroke={strokeColor}
                   strokeWidth={strokeWidth}
+                  strokeDasharray={isPathEdge ? 'none' : 'none'}
                   markerEnd={marker}
                   className="transition-colors duration-200"
                 />
@@ -168,7 +217,7 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
                     y="3"
                     textAnchor="middle"
                     className="font-mono text-[10px] font-bold"
-                    fill={e.weight < 0 ? '#F87171' : '#F3F4F6'}
+                    fill={e.weight < 0 ? '#F87171' : isPathEdge ? '#10B981' : '#F3F4F6'}
                   >
                     {e.weight}
                   </text>
@@ -180,6 +229,7 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
           {/* Graph Nodes */}
           {nodes.map((node) => {
             const isSource = node.id === sourceId;
+            const isDestination = destinationId === node.id;
             const dist = distances[node.id];
             const inCycle = negativeCycleNodes?.includes(node.id);
 
@@ -192,6 +242,9 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
             } else if (isSource) {
               nodeFill = '#581C87';
               strokeColor = '#A78BFA';
+            } else if (isDestination) {
+              nodeFill = '#064E3B';
+              strokeColor = '#10B981';
             }
 
             return (
@@ -238,6 +291,8 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
             const dist = distances[node.id];
             const pred = predecessors[node.id];
             const inCycle = negativeCycleNodes?.includes(node.id);
+            const isSrc = node.id === sourceId;
+            const isDst = node.id === destinationId;
 
             return (
               <div
@@ -245,16 +300,25 @@ export const BellmanFordVisualizer: React.FC<BellmanFordVisualizerProps> = ({ st
                 className={`p-2 rounded-clay-sm border ${
                   inCycle
                     ? 'bg-red-950/30 border-red-500/40 text-red-300'
+                    : isDst
+                    ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
                     : 'clay-card text-txt-secondary'
                 }`}
               >
                 <div className="flex items-center justify-between text-txt-primary font-bold">
                   <span>Node {node.id}</span>
-                  {node.id === sourceId && (
-                    <span className="text-[9px] text-purple-300 bg-purple-500/20 px-1 rounded">
-                      SRC
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {isSrc && (
+                      <span className="text-[9px] text-purple-300 bg-purple-500/20 px-1 rounded">
+                        SRC
+                      </span>
+                    )}
+                    {isDst && (
+                      <span className="text-[9px] text-emerald-300 bg-emerald-500/20 px-1 rounded">
+                        DST
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-[11px] mt-1 text-emerald-300">
                   dist: <strong className="text-white">{dist === Infinity ? '∞' : dist}</strong>

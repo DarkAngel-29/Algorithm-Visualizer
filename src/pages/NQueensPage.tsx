@@ -12,11 +12,12 @@ import { ComplexityPanel } from '../components/visualizer/ComplexityPanel';
 export const NQueensPage: React.FC = () => {
   const [boardSize, setBoardSize] = useState<number>(8);
   const [mode, setMode] = useState<'first' | 'all'>('first');
+  const [strategy, setStrategy] = useState<'ltr' | 'middle_out' | 'rtl'>('ltr');
 
   // Generate deterministic steps
   const executionResult = useMemo(() => {
-    return generateNQueensSteps(boardSize, mode);
-  }, [boardSize, mode]);
+    return generateNQueensSteps(boardSize, mode, strategy);
+  }, [boardSize, mode, strategy]);
 
   const handleComplete = useCallback(() => {
     try {
@@ -117,22 +118,19 @@ export const NQueensPage: React.FC = () => {
             {/* Board Size N Selector */}
             <div className="flex items-center gap-3">
               <label className="text-xs text-txt-secondary font-medium">Board Size (N):</label>
-              <div className="flex items-center gap-1.5">
-                {[4, 5, 6, 8, 10].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setBoardSize(n)}
-                    disabled={isPlaying}
-                    className={`px-3 py-1.5 rounded-clay-sm text-xs font-mono transition-all ${
-                      boardSize === n
-                        ? 'bg-accent-primary text-slate-950 font-bold shadow-clay-btn'
-                        : 'clay-button text-txt-secondary hover:text-txt-primary'
-                    }`}
-                  >
-                    {n}×{n}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="4"
+                  max="12"
+                  value={boardSize}
+                  onChange={(e) => setBoardSize(Number(e.target.value))}
+                  disabled={isPlaying}
+                  className="w-24 accent-purple-400 cursor-pointer"
+                />
+                <span className="font-mono text-txt-primary font-bold text-xs bg-[#161920] px-2 py-0.5 rounded border border-white/5">
+                  {boardSize}×{boardSize}
+                </span>
               </div>
             </div>
 
@@ -163,6 +161,52 @@ export const NQueensPage: React.FC = () => {
                   }`}
                 >
                   All Solutions
+                </button>
+              </div>
+            </div>
+
+            {/* Candidate Search Order */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-txt-secondary font-medium">Column Order:</label>
+              <div className="flex items-center bg-[#161920] p-1 rounded-clay-sm border border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setStrategy('ltr')}
+                  disabled={isPlaying}
+                  className={`px-2.5 py-1 text-xs rounded transition-all ${
+                    strategy === 'ltr'
+                      ? 'bg-cyan-600 text-white font-medium shadow-sm'
+                      : 'text-txt-muted hover:text-txt-secondary'
+                  }`}
+                  title="Test columns from left to right"
+                >
+                  Left→Right
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStrategy('middle_out')}
+                  disabled={isPlaying}
+                  className={`px-2.5 py-1 text-xs rounded transition-all ${
+                    strategy === 'middle_out'
+                      ? 'bg-cyan-600 text-white font-medium shadow-sm'
+                      : 'text-txt-muted hover:text-txt-secondary'
+                  }`}
+                  title="Test center columns first (Heuristic)"
+                >
+                  Middle-Out
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStrategy('rtl')}
+                  disabled={isPlaying}
+                  className={`px-2.5 py-1 text-xs rounded transition-all ${
+                    strategy === 'rtl'
+                      ? 'bg-cyan-600 text-white font-medium shadow-sm'
+                      : 'text-txt-muted hover:text-txt-secondary'
+                  }`}
+                  title="Test columns from right to left"
+                >
+                  Right→Left
                 </button>
               </div>
             </div>

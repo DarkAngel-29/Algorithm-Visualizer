@@ -45,6 +45,7 @@ export interface NQueensGeneratorResult {
 export function generateNQueensSteps(
   boardSize: number = 8,
   mode: 'first' | 'all' = 'first',
+  searchStrategy: 'ltr' | 'rtl' | 'middle_out' = 'ltr',
   maxSteps: number = 3000
 ): NQueensGeneratorResult {
   const steps: NQueensStep[] = [];
@@ -56,6 +57,25 @@ export function generateNQueensSteps(
   let backtrackCount = 0;
   let solutionsCount = 0;
   let searchAbortedDueToLimit = false;
+
+  const getColumnOrder = (n: number, strat: 'ltr' | 'rtl' | 'middle_out'): number[] => {
+    if (strat === 'rtl') {
+      return Array.from({ length: n }, (_, i) => n - 1 - i);
+    }
+    if (strat === 'middle_out') {
+      const cols: number[] = [];
+      const mid = Math.floor(n / 2);
+      cols.push(mid);
+      for (let offset = 1; offset <= n; offset++) {
+        if (mid - offset >= 0) cols.push(mid - offset);
+        if (mid + offset < n) cols.push(mid + offset);
+      }
+      return cols;
+    }
+    return Array.from({ length: n }, (_, i) => i);
+  };
+
+  const colOrder = getColumnOrder(boardSize, searchStrategy);
 
   // Initial Step: Empty Board
   steps.push({
@@ -153,7 +173,7 @@ export function generateNQueensSteps(
       return;
     }
 
-    for (let col = 0; col < boardSize; col++) {
+    for (const col of colOrder) {
       if (stepCounter >= maxSteps) {
         searchAbortedDueToLimit = true;
         return;

@@ -48,6 +48,25 @@ export function generateKnapsackSteps(
   const n = items.length;
   let stepCounter = 0;
 
+  if (items.length === 0) {
+    steps.push({
+      stepIndex: stepCounter++,
+      phase: 'complete',
+      operation: 'EMPTY_ITEMS',
+      explanation: 'No items provided in knapsack. Optimal value is 0.',
+      codeLine: 1,
+      items: [],
+      capacity,
+      dpTable: [Array.from({ length: capacity + 1 }, () => 0)],
+      currentItemIndex: 0,
+      currentWeight: 0,
+      optimalValue: 0,
+      optimalWeight: 0,
+      selectedItemIds: [],
+    });
+    return { steps, optimalValue: 0, optimalWeight: 0, selectedItemIds: [] };
+  }
+
   // Initialize DP table with 0s
   const dpTable: number[][] = Array.from({ length: n + 1 }, () =>
     Array.from({ length: capacity + 1 }, () => 0)

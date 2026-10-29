@@ -47,8 +47,26 @@ export function generateKMPSteps(
   const n = text.length;
 
   const lps = Array.from({ length: m }, () => 0);
-  let stepCounter = 0;
-  let compCount = 0;
+  if (m === 0) {
+    steps.push({
+      stepIndex: 0,
+      phase: 'complete',
+      operation: 'INITIALIZE',
+      stage: 'lps',
+      text,
+      pattern: '',
+      lpsTable: [],
+      currentPatternIndex: 0,
+      currentPrefixLen: 0,
+      currentTextIndex: 0,
+      matchedIndices: [],
+      comparisonCount: 0,
+      explanation: 'Search pattern is empty. Please enter a pattern to begin KMP search.',
+      codeLine: 1,
+      isComplete: true,
+    });
+    return { steps, lpsTable: [], matchedIndices: [] };
+  }
 
   // ================= STAGE A: LPS CONSTRUCTION =================
   steps.push({
